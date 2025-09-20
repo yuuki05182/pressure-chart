@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>気圧グラフ（東京）</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+    }
+    label, input, button {
+      font-size: 1rem;
+      margin: 10px 0;
+      display: block;
+      width: 100%;
+    }
+    button {
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>東京の気圧グラフ</h2>
+
+  <label for="days">表示する日数（最大10日）:</label>
+  <input type="number" id="days" value="3" min="1" max="10">
+  <button onclick="loadPressureData()">表示</button>
+
+  <canvas id="pressureChart"></canvas>
+
+  <script>
+    const stationCode = "44132"; // 北の丸公園
+    const hours = ["00", "03", "06", "09", "12", "15", "18", "21"];
+
+    function getDateList(days) {
+      const list = [];
+      const now = new Date();
+      for (let i = 0; i < days; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        list.push(`${yyyy}${mm}${dd}`);
+      }
+      return list.reverse(); // 古い順
+    }
+
+    async function fetchPressure(date, hour) {
+      const timestamp = `${date}${hour}0000`;
+      const url = `https://www.jma.go.jp/bosai/amedas/data/map/${timestamp}.json`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const stationData = data[stationCode];
+        const pressure = stationData?.pressure?.[0];
+        const quality = stationData?.pressure?.[1];
+        if (pressure !== undefined && quality === 0) {
+          return Number(pressure);
+        }
+      } catch (e) {
+        console.error("取得失敗:", e);
+      }
+      return null;
+    }
+
+    async function loadPressureData() {
+      const days = parseInt(document.getElementById("days").value);
+      const dates = getDateList(days);
+      const labels = [];
+      const data = [];
+
+      for (const date of dates) {
+        for (const hour of hours) {
+          const label = `${date} ${hour}:00`;
+          const pressure = await fetchPressure(date, hour);
+          if (pressure !== null) {
+            labels.push(label);
+            data.push(pressure);
+          }
+        }
+      }
+
+      drawChart(labels, data);
+    }
+
+    function drawChart(labels, data) {
+      const ctx = document.getElementById("pressureChart").getContext("2d");
+      if (window.myChart) window.myChart.destroy();
+
+      window.myChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "気圧 (hPa)",
+            data: data,
+            borderColor: "blue",
+            borderWidth: 2,
+            pointRadius: 2,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: "東京の気圧変化"
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "時刻"
+              },
+              ticks: {
+                autoSkip: true,
+                maxTicksLimit: 40
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: "気圧 (hPa)"
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
