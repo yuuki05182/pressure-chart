@@ -2,19 +2,15 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>気圧グラフ（東京）</title>
+  <title>東京の気圧グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
     }
     label, input, button {
       font-size: 1rem;
@@ -25,6 +21,14 @@
     button {
       padding: 10px;
     }
+    #chart-container {
+      width: 100%;
+      height: 600px; /* ← グラフの縦サイズを大きく設定 */
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
@@ -34,7 +38,9 @@
   <input type="number" id="days" value="3" min="1" max="10">
   <button onclick="loadPressureData()">表示</button>
 
-  <canvas id="pressureChart"></canvas>
+  <div id="chart-container">
+    <canvas id="pressureChart"></canvas>
+  </div>
 
   <script>
     const stationCode = "44132"; // 北の丸公園
@@ -105,16 +111,16 @@
             data: data,
             borderColor: "blue",
             borderWidth: 2,
-            pointRadius: 2,
+            pointRadius: 3,
             fill: false
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false, // ← 高さを親要素に合わせる
           plugins: {
             title: {
               display: true,
-              maintainAspectRatio: false, // ← これが重要
               text: "東京の気圧変化"
             }
           },
@@ -133,7 +139,9 @@
               title: {
                 display: true,
                 text: "気圧 (hPa)"
-              }
+              },
+              min: 980, // ← 任意で調整可能
+              max: 1040
             }
           }
         }
@@ -142,7 +150,3 @@
   </script>
 </body>
 </html>
-
-
-
-
